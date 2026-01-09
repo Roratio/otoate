@@ -1,34 +1,41 @@
-// 1. WASMとYogaは静的インポートのままでOK
-import resvgWasmModule from './resvg.wasm';
-import yogaWasmModule from './yoga.wasm';
+// 1. ライブラリの読み込み
+// resvg-wasm の初期化関数
 import { initWasm as initResvg, Resvg } from '@resvg/resvg-wasm';
+// yoga-wasm-web の初期化関数
 import initYoga from 'yoga-wasm-web';
 
-// 2. process ポリフィルを定義
-// これが実行された後に satori を読み込む必要があります
+// Wasmファイルを静的インポート (CloudflareではこれがModuleになるはずですが、念のため ?module をつけます)
+// もし ?module がビルドエラーになる場合は外してください
+import resvgWasmModule from './resvg.wasm';
+import yogaWasmModule from './yoga.wasm';
+
+// 2. process ポリフィル
 globalThis.process = globalThis.process || { env: {} };
 
-// 初期化フラグ
 let isInitialized = false;
 
 export async function onRequest(context) {
     try {
-        // 3. 【重要】Satoriをここで「動的インポート」する
-        // await import() を使うことで、上のポリフィル適用後に読み込まれます
+        // 3. Satoriの動的インポート
         const { default: satori, init: initSatori } = await import('satori');
 
-        // 4. 初期化処理 (初回のみ)
+        // 4. 初期化処理
         if (!isInitialized) {
-            // (A) Yoga (レイアウトエンジン) を初期化
-            const yoga = await initYoga(yogaWasmModule);
-            
-            // (B) SatoriにYogaを渡す
-            initSatori(yoga);
-            
-            // (C) Resvg (画像変換) を初期化
-            await initResvg(resvgWasmModule);
-            
-            isInitialized = true;
+            try {
+                // (A) Yogaの初期化
+                // ここで Module を渡すことでコンパイルを回避します
+                const yoga = await initYoga(yogaWasmModule);
+                initSatori(yoga);
+                
+                // (B) Resvgの初期化
+                await initResvg(resvgWasmModule);
+                
+                isInitialized = true;
+            } catch (e) {
+                // 初期化失敗時の詳細ログ
+                console.error("Wasm Init Error:", e);
+                throw e;
+            }
         }
 
         const { request } = context;
@@ -36,14 +43,14 @@ export async function onRequest(context) {
         const score = url.searchParams.get('score') || '0';
         const rankPct = url.searchParams.get('rank') || '-';
 
-        // フォントの読み込み (CDN)
+        // フォント読み込み
         const fontUrl = 'https://cdn.jsdelivr.net/npm/@fontsource/noto-sans-jp@5.0.12/files/noto-sans-jp-japanese-700-normal.woff';
         const fontData = await fetch(fontUrl).then(res => {
             if (!res.ok) throw new Error(`Failed to load font: ${res.status}`);
             return res.arrayBuffer();
         });
 
-        // 画像レイアウトの定義 (Satori)
+        // レイアウト定義 (Satori)
         const markup = {
             type: 'div',
             props: {
