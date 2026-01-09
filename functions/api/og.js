@@ -1,19 +1,21 @@
-// --- 1. Satori用のPolyfill (これが無いとエラーになります) ---
-if (typeof process === 'undefined') {
-    globalThis.process = { env: {} };
-}
-
-import { initWasm, Resvg } from '@resvg/resvg-wasm';
-import satori from 'satori';
-// 配置したwasmファイルをインポート
+// 1. WASM関連は静的インポート（バンドルのため必須）
 import resvgWasm from './resvg.wasm';
+import { initWasm, Resvg } from '@resvg/resvg-wasm';
 
-// 初期化済みかどうかのフラグ
+// 2. process ポリフィル
+// これを定義してから Satori を読み込む必要があります
+globalThis.process = globalThis.process || { env: {} };
+
+// 初期化フラグ
 let isWasmInitialized = false;
 
 export async function onRequest(context) {
     try {
-        // --- 2. WASM初期化 (関数内で実行) ---
+        // 3. 【重要】Satoriをここで動的に読み込む
+        // こうすることで、上の process ポリフィルが確実に適用された後に読み込まれます
+        const { default: satori } = await import('satori');
+
+        // 4. WASMの初期化（初回のみ）
         if (!isWasmInitialized) {
             await initWasm(resvgWasm);
             isWasmInitialized = true;
