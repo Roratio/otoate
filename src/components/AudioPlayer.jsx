@@ -128,6 +128,7 @@ export function AudioPlayer({ src, autoPlay = false, showVideo = false }) {
                         ref={audioRef}
                         src={src}
                         autoPlay={autoPlay}
+                        playsInline // Prevent iOS fullscreen
                         controls={showVideo} // Enable controls when video is shown
                         onEnded={() => setIsPlaying(false)}
                         onPlay={() => setIsPlaying(true)}
