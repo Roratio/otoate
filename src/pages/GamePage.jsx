@@ -25,21 +25,52 @@ export function GamePage() {
 
     useEffect(() => {
         const fetchQuestions = async () => {
-            try {
-                const querySnapshot = await getDocs(collection(db, "questions"));
-                const qList = querySnapshot.docs.map(doc => ({
-                    id: doc.id,
-                    ...doc.data()
-                }));
+            const CACHE_KEY = 'otoate_questions_cache';
+            const CACHE_EXPIRY = 60 * 60 * 1000; // 1時間
 
-                // Shuffle and pick 10
-                const shuffled = shuffleArray(qList);
-                setQuestions(shuffled.slice(0, 10));
-            } catch (error) {
-                console.error("Error fetching questions:", error);
-            } finally {
-                setLoading(false);
+            // キャッシュの確認
+            const cached = localStorage.getItem(CACHE_KEY);
+            let qList = [];
+
+            if (cached) {
+                try {
+                    const parsed = JSON.parse(cached);
+                    const now = Date.now();
+                    if (now - parsed.timestamp < CACHE_EXPIRY) {
+                        console.log("Using cached questions");
+                        qList = parsed.data;
+                    }
+                } catch (e) {
+                    console.error("Cache parse error", e);
+                }
             }
+
+            // キャッシュがない、または期限切れの場合は取得
+            if (qList.length === 0) {
+                try {
+                    console.log("Fetching questions from Firestore");
+                    const querySnapshot = await getDocs(collection(db, "questions"));
+                    qList = querySnapshot.docs.map(doc => ({
+                        id: doc.id,
+                        ...doc.data()
+                    }));
+
+                    // キャッシュに保存
+                    localStorage.setItem(CACHE_KEY, JSON.stringify({
+                        data: qList,
+                        timestamp: Date.now()
+                    }));
+                } catch (error) {
+                    console.error("Error fetching questions:", error);
+                }
+            }
+
+            // シャッフルして10問選択
+            if (qList.length > 0) {
+                const shuffled = shuffleArray([...qList]); // コピーを作成してシャッフル
+                setQuestions(shuffled.slice(0, 10));
+            }
+            setLoading(false);
         };
 
         fetchQuestions();
