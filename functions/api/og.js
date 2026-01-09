@@ -1,38 +1,28 @@
-// Polyfill process for satori/yoga-wasm-web
-if (typeof process === 'undefined') {
-    globalThis.process = { env: {} };
-}
+import { initWasm, Resvg } from '@resvg/resvg-wasm';
+import satori from 'satori';
+// 手順1で配置したwasmファイルをインポート
+import resvgWasm from './resvg.wasm';
+
+// WASMの初期化（トップレベルで一度だけ実行）
+// CloudflareではインポートしたWASMはWebAssembly.Moduleとして扱われます
+await initWasm(resvgWasm);
 
 export async function onRequest(context) {
     try {
-        // 1. 必要なライブラリをインポート
-        const { default: satori } = await import('satori');
-        const { initWasm, Resvg } = await import('@resvg/resvg-wasm');
-
         const { request } = context;
         const url = new URL(request.url);
         const score = url.searchParams.get('score') || '0';
         const rankPct = url.searchParams.get('rank') || '-';
 
-        // 2. フォントの読み込み (CDN)
+        // フォントの読み込み (CDN)
+        // ※フォントはWASMではないのでfetchのままでOKです
         const fontUrl = 'https://cdn.jsdelivr.net/npm/@fontsource/noto-sans-jp@5.0.12/files/noto-sans-jp-japanese-700-normal.woff';
         const fontData = await fetch(fontUrl).then(res => {
             if (!res.ok) throw new Error(`Failed to load font: ${res.status}`);
             return res.arrayBuffer();
         });
 
-        // 3. 【修正箇所】Resvg用 WASMファイルの読み込み (CDN)
-        // ローカルimportだと失敗しやすいため、CDNから取得します
-        const wasmUrl = 'https://unpkg.com/@resvg/resvg-wasm@2.6.2/index_bg.wasm';
-        const wasmBuffer = await fetch(wasmUrl).then(res => {
-            if (!res.ok) throw new Error(`Failed to load WASM: ${res.status}`);
-            return res.arrayBuffer();
-        });
-        
-        // WASMを初期化
-        await initWasm(wasmBuffer);
-
-        // 4. 画像レイアウトの定義 (Satori)
+        // 画像レイアウトの定義 (Satori)
         const markup = {
             type: 'div',
             props: {
@@ -48,7 +38,6 @@ export async function onRequest(context) {
                     position: 'relative',
                 },
                 children: [
-                    // --- 中身のコンテンツ (変更なし) ---
                     {
                         type: 'div',
                         props: {
@@ -181,7 +170,7 @@ export async function onRequest(context) {
             },
         };
 
-        // 5. SVG生成 (Satori)
+        // SVG生成 (Satori)
         const svg = await satori(markup, {
             width: 1200,
             height: 630,
@@ -195,7 +184,7 @@ export async function onRequest(context) {
             ],
         });
 
-        // 6. PNG変換 (Resvg)
+        // PNG変換 (Resvg)
         const resvg = new Resvg(svg);
         const pngData = resvg.render();
         const pngBuffer = pngData.asPng();
