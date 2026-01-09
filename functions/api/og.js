@@ -5,11 +5,24 @@ if (typeof process === 'undefined') {
     globalThis.process = { env: {} };
 }
 
+// Import WASM module directly.
+// Cloudflare Pages Functions (Wrangler) treats *.wasm imports as WebAssembly.Module
+import resvgWasmModule from './resvg.wasm';
+
 export async function onRequest(context) {
     try {
         // Dynamic import to ensure polyfill applies before module load
         const { default: satori } = await import('satori');
         const { initWasm, Resvg } = await import('@resvg/resvg-wasm');
+
+        // Initialize WASM with the imported module
+        // This avoids dynamic compilation errors
+        try {
+            await initWasm(resvgWasmModule);
+        } catch (e) {
+            // Already initialized or other issue
+            // console.warn(e);
+        }
 
         const { request } = context;
         const url = new URL(request.url);
@@ -19,24 +32,14 @@ export async function onRequest(context) {
         // Fetch a font (Required by Satori)
         const fontUrl = 'https://cdn.jsdelivr.net/npm/@fontsource/noto-sans-jp@5.0.12/files/noto-sans-jp-japanese-700-normal.woff';
 
-        const fontDataPromise = fetch(fontUrl)
+        const fontData = await fetch(fontUrl)
             .then(res => {
                 if (!res.ok) throw new Error(`Failed to load font: ${res.status}`);
                 return res.arrayBuffer();
+            })
+            .catch(err => {
+                throw new Error(`Font fetch error: ${err.message}`);
             });
-
-        // Fetch WASM manually from our own public assets
-        // We copied index_bg.wasm to public/resvg.wasm
-        const wasmUrl = `${url.origin}/resvg.wasm`;
-        const wasmDataPromise = fetch(wasmUrl)
-            .then(res => {
-                if (!res.ok) throw new Error(`Failed to load WASM from ${wasmUrl}: ${res.status}`);
-                return res.arrayBuffer();
-            });
-
-        // Wait for both parallely
-        const [fontData, wasmData] = await Promise.all([fontDataPromise, wasmDataPromise]);
-
 
         // Define the element (JSX-like object structure)
         const markup = {
@@ -204,15 +207,6 @@ export async function onRequest(context) {
                 },
             ],
         });
-
-        // Initialize Resvg WASM with ArrayBuffer
-        // This bypasses compileStreaming
-        try {
-            await initWasm(wasmData);
-        } catch (e) {
-            // It might be already initialized or handle itself
-            // console.warn("WASM init warning:", e);
-        }
 
         const resvg = new Resvg(svg);
         const pngData = resvg.render();
