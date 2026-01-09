@@ -34,11 +34,19 @@ export async function onRequest(context) {
         const score = url.searchParams.get('score') || '0';
         const rankPct = url.searchParams.get('rank') || '-';
 
-        // Fetch font
-        const fontUrl = 'https://cdn.jsdelivr.net/npm/@fontsource/noto-sans-jp@5.0.12/files/noto-sans-jp-japanese-700-normal.woff';
-        const fontDataPromise = fetch(fontUrl)
+        // Fetch fonts (JP and KR)
+        const fontUrlJP = 'https://cdn.jsdelivr.net/npm/@fontsource/noto-sans-jp@5.0.12/files/noto-sans-jp-japanese-700-normal.woff';
+        const fontUrlKR = 'https://cdn.jsdelivr.net/npm/@fontsource/noto-sans-kr@5.0.12/files/noto-sans-kr-korean-700-normal.woff';
+
+        const fontDataPromiseJP = fetch(fontUrlJP)
             .then(res => {
-                if (!res.ok) throw new Error(`Failed to load font: ${res.status}`);
+                if (!res.ok) throw new Error(`Failed to load JP font: ${res.status}`);
+                return res.arrayBuffer();
+            });
+
+        const fontDataPromiseKR = fetch(fontUrlKR)
+            .then(res => {
+                if (!res.ok) throw new Error(`Failed to load KR font: ${res.status}`);
                 return res.arrayBuffer();
             });
 
@@ -53,7 +61,7 @@ export async function onRequest(context) {
                     height: '100%',
                     backgroundColor: '#1a1a1a',
                     color: 'white',
-                    fontFamily: 'Noto Sans JP',
+                    fontFamily: 'Noto Sans JP, Noto Sans KR',
                     backgroundImage: 'radial-gradient(circle at center, #2a2a2a 0%, #000000 100%)',
                     position: 'relative',
                 },
@@ -115,6 +123,7 @@ export async function onRequest(context) {
                                                         color: '#aaaaaa',
                                                         marginTop: '4px',
                                                         textShadow: '0 2px 4px rgba(0,0,0,0.8)',
+                                                        fontFamily: 'Noto Sans KR', // Explicitly substitute for Korean part (Satori might need hint)
                                                     },
                                                     children: '이터널 리턴 스킬 음대 게임',
                                                 },
@@ -232,7 +241,7 @@ export async function onRequest(context) {
             },
         };
 
-        const fontData = await fontDataPromise;
+        const [fontDataJP, fontDataKR] = await Promise.all([fontDataPromiseJP, fontDataPromiseKR]);
 
         // Generate SVG
         const svg = await satori(markup, {
@@ -241,7 +250,13 @@ export async function onRequest(context) {
             fonts: [
                 {
                     name: 'Noto Sans JP',
-                    data: fontData,
+                    data: fontDataJP,
+                    weight: 400,
+                    style: 'normal',
+                },
+                {
+                    name: 'Noto Sans KR',
+                    data: fontDataKR,
                     weight: 400,
                     style: 'normal',
                 },
