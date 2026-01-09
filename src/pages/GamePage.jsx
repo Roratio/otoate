@@ -106,12 +106,14 @@ export function GamePage() {
             }
 
             const rank = better + 1;
-            const percent = (rank / total) * 100;
+            // 自分のスコアがAPIの集計にまだ反映されていない場合、totalよりrankが大きくなることがあるため補正
+            const effectiveTotal = Math.max(total, rank);
+            const percent = (rank / effectiveTotal) * 100;
 
             setRankingData({
                 percent: percent.toFixed(1),
                 rank: rank,
-                total: total
+                total: effectiveTotal
             });
 
         } catch (error) {
