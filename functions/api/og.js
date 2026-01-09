@@ -1,13 +1,11 @@
-
 // Polyfill process for satori/yoga-wasm-web
-// This MUST be before imports because satori might use it on module load
 if (typeof process === 'undefined') {
     globalThis.process = { env: {} };
 }
 
 export async function onRequest(context) {
     try {
-        // Dynamic import to ensure polyfill applies before module load
+        // 1. 必要なライブラリをインポート
         const { default: satori } = await import('satori');
         const { initWasm, Resvg } = await import('@resvg/resvg-wasm');
 
@@ -16,19 +14,25 @@ export async function onRequest(context) {
         const score = url.searchParams.get('score') || '0';
         const rankPct = url.searchParams.get('rank') || '-';
 
-        // Fetch a font (Required by Satori)
+        // 2. フォントの読み込み (CDN)
         const fontUrl = 'https://cdn.jsdelivr.net/npm/@fontsource/noto-sans-jp@5.0.12/files/noto-sans-jp-japanese-700-normal.woff';
+        const fontData = await fetch(fontUrl).then(res => {
+            if (!res.ok) throw new Error(`Failed to load font: ${res.status}`);
+            return res.arrayBuffer();
+        });
 
-        const fontData = await fetch(fontUrl)
-            .then(res => {
-                if (!res.ok) throw new Error(`Failed to load font: ${res.status}`);
-                return res.arrayBuffer();
-            })
-            .catch(err => {
-                throw new Error(`Font fetch error: ${err.message}`);
-            });
+        // 3. 【修正箇所】Resvg用 WASMファイルの読み込み (CDN)
+        // ローカルimportだと失敗しやすいため、CDNから取得します
+        const wasmUrl = 'https://unpkg.com/@resvg/resvg-wasm@2.6.2/index_bg.wasm';
+        const wasmBuffer = await fetch(wasmUrl).then(res => {
+            if (!res.ok) throw new Error(`Failed to load WASM: ${res.status}`);
+            return res.arrayBuffer();
+        });
+        
+        // WASMを初期化
+        await initWasm(wasmBuffer);
 
-        // Define the element (JSX-like object structure)
+        // 4. 画像レイアウトの定義 (Satori)
         const markup = {
             type: 'div',
             props: {
@@ -44,7 +48,7 @@ export async function onRequest(context) {
                     position: 'relative',
                 },
                 children: [
-                    // Main Content Center
+                    // --- 中身のコンテンツ (変更なし) ---
                     {
                         type: 'div',
                         props: {
@@ -54,10 +58,9 @@ export async function onRequest(context) {
                                 alignItems: 'center',
                                 justifyContent: 'center',
                                 flex: 1,
-                                paddingBottom: '60px', // Space for footer
+                                paddingBottom: '60px',
                             },
                             children: [
-                                // Result Label
                                 {
                                     type: 'div',
                                     props: {
@@ -71,7 +74,6 @@ export async function onRequest(context) {
                                         children: '特務員行動記録 [結果診断]',
                                     },
                                 },
-                                // Main Title / Score Area
                                 {
                                     type: 'div',
                                     props: {
@@ -99,7 +101,6 @@ export async function onRequest(context) {
                                         ]
                                     },
                                 },
-                                // Rank Badge
                                 {
                                     type: 'div',
                                     props: {
@@ -135,7 +136,6 @@ export async function onRequest(context) {
                             ],
                         },
                     },
-                    // Footer Bar
                     {
                         type: 'div',
                         props: {
@@ -181,7 +181,7 @@ export async function onRequest(context) {
             },
         };
 
-        // Generate SVG with Satori
+        // 5. SVG生成 (Satori)
         const svg = await satori(markup, {
             width: 1200,
             height: 630,
@@ -195,13 +195,7 @@ export async function onRequest(context) {
             ],
         });
 
-        // Initialize Resvg WASM
-        try {
-            await initWasm(import('@resvg/resvg-wasm/index_bg.wasm'));
-        } catch (e) {
-            // console.warn("WASM init warning:", e);
-        }
-
+        // 6. PNG変換 (Resvg)
         const resvg = new Resvg(svg);
         const pngData = resvg.render();
         const pngBuffer = pngData.asPng();
@@ -213,6 +207,7 @@ export async function onRequest(context) {
             },
         });
     } catch (err) {
+        console.error(err);
         return new Response(JSON.stringify({
             error: "OGP Generation Failed",
             message: err.message,
