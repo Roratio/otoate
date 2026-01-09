@@ -131,7 +131,7 @@ export function GamePage() {
         return (
             <div className="container">
                 <div className="card" style={{ maxWidth: '600px', width: '100%', padding: '3rem 2rem' }}>
-                    <h1 style={{ marginBottom: '1rem' }}>結果発表</h1>
+                    <h1 style={{ marginBottom: '1rem' }}>結果発表 / 결과 발표</h1>
 
                     <div style={{ fontSize: '4rem', fontWeight: 'bold', color: 'var(--er-primary)', marginBottom: '1rem' }}>
                         {score} <span style={{ fontSize: '1.5rem', color: '#888' }}>/ 10</span>
@@ -139,16 +139,16 @@ export function GamePage() {
 
                     {rankingData ? (
                         <div style={{ background: '#222', padding: '1.5rem', borderRadius: '8px', marginBottom: '2rem' }}>
-                            <div style={{ fontSize: '1.2rem', color: '#aaa', marginBottom: '0.5rem' }}>あなたのランク</div>
+                            <div style={{ fontSize: '1.2rem', color: '#aaa', marginBottom: '0.5rem' }}>あなたのランク / 당신의 순위</div>
                             <div style={{ fontSize: '2rem', fontWeight: 'bold', color: 'white' }}>
-                                上位 <span style={{ color: '#4ade80' }}>{rankingData.percent}%</span>
+                                上位 / 상위 <span style={{ color: '#4ade80' }}>{rankingData.percent}%</span>
                             </div>
                             <div style={{ fontSize: '0.9rem', color: '#666', marginTop: '0.5rem' }}>
-                                ({rankingData.total}人中 {rankingData.rank}位)
+                                ({rankingData.total}人中 {rankingData.rank}位 / {rankingData.total}명 중 {rankingData.rank}위)
                             </div>
                         </div>
                     ) : (
-                        <div style={{ margin: '2rem 0', color: '#888' }}>集計中...</div>
+                        <div style={{ margin: '2rem 0', color: '#888' }}>集計中... / 집계 중...</div>
                     )}
 
                     <a
@@ -173,14 +173,14 @@ export function GamePage() {
                         onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}
                     >
                         <Share2 size={24} />
-                        結果をポストする
+                        結果をポストする / 결과 공유하기
                     </a>
 
                     <button
                         onClick={() => window.location.reload()}
                         style={{ marginTop: '2rem', background: 'transparent', border: '1px solid #444', color: '#888' }}
                     >
-                        もう一度遊ぶ
+                        もう一度遊ぶ / 다시 하기
                     </button>
                 </div>
             </div>
