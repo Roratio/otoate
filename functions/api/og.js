@@ -1,3 +1,8 @@
+// Polyfill process for satori/yoga-wasm-web
+// This MUST be before imports because satori might use it on module load
+if (typeof process === 'undefined') {
+    globalThis.process = { env: {} };
+}
 
 import satori from 'satori';
 import { initWasm, Resvg } from '@resvg/resvg-wasm';
@@ -8,10 +13,6 @@ import { initWasm, Resvg } from '@resvg/resvg-wasm';
 // We might need to import the wasm file or rely on the package to handle it if utilizing modules.
 // For simplicity in standard node/module envs, we'll try standard import.
 // If it fails on deployment, we might need a workaround for loading WASM.
-// Polyfill process for satori/yoga-wasm-web
-if (typeof process === 'undefined') {
-    globalThis.process = { env: {} };
-}
 
 
 export async function onRequest(context) {
