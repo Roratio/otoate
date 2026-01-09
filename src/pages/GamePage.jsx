@@ -249,7 +249,7 @@ export function GamePage() {
 
                     {/* Audio Player */}
                     <div key={currentQuestion.id}>
-                        <AudioPlayer src={currentQuestion.driveLink} autoPlay={true} />
+                        <AudioPlayer src={currentQuestion.driveLink} autoPlay={true} showVideo={!!feedback} />
                     </div>
                 </div>
 

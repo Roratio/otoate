@@ -14,7 +14,7 @@ const getYouTubeId = (url) => {
     return (match && match[2].length === 11) ? match[2] : null;
 };
 
-export function AudioPlayer({ src, autoPlay = false }) {
+export function AudioPlayer({ src, autoPlay = false, showVideo = false }) {
     const audioRef = useRef(null);
     const iframeRef = useRef(null);
     const [isPlaying, setIsPlaying] = useState(false);
@@ -55,6 +55,16 @@ export function AudioPlayer({ src, autoPlay = false }) {
         }
     }, [src, autoPlay, isYouTube]);
 
+    // Trigger Replay / Show Video Logic
+    useEffect(() => {
+        if (showVideo && audioRef.current && !isYouTube) {
+            audioRef.current.currentTime = 0;
+            audioRef.current.play()
+                .then(() => setIsPlaying(true))
+                .catch(e => console.log("Video reveal auto-play failed", e));
+        }
+    }, [showVideo, isYouTube]);
+
     // Handle Volume Changes
     useEffect(() => {
         // Save to localStorage
@@ -92,15 +102,21 @@ export function AudioPlayer({ src, autoPlay = false }) {
     };
 
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.5rem', padding: '1rem' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.5rem', padding: '1rem', width: '100%' }}>
 
-            {/* Hidden Player Elements */}
-            <div style={{ position: 'absolute', width: 0, height: 0, overflow: 'hidden' }}>
+            {/* Hidden Player Elements / Video Display */}
+            <div style={{
+                width: '100%',
+                display: 'flex',
+                justifyContent: 'center',
+                // Keep hidden strictly if not showVideo and not YouTube (YouTube has its own frame)
+                // But structure needs to be clean.
+            }}>
                 {isYouTube ? (
                     <iframe
                         ref={iframeRef}
-                        width="80"
-                        height="45"
+                        width="100%"
+                        style={{ aspectRatio: '16/9', maxWidth: '600px' }}
                         src={`https://www.youtube.com/embed/${ytId}?enablejsapi=1&autoplay=${autoPlay ? 1 : 0}`}
                         title="YouTube video player"
                         frameBorder="0"
@@ -112,16 +128,24 @@ export function AudioPlayer({ src, autoPlay = false }) {
                         ref={audioRef}
                         src={src}
                         autoPlay={autoPlay}
+                        controls={showVideo} // Enable controls when video is shown
                         onEnded={() => setIsPlaying(false)}
                         onPlay={() => setIsPlaying(true)}
                         onPause={() => setIsPlaying(false)}
-                        style={{ display: 'none' }}
+                        style={{
+                            display: showVideo ? 'block' : 'none',
+                            width: '100%',
+                            maxWidth: '600px',
+                            borderRadius: '8px',
+                            boxShadow: '0 4px 12px rgba(0,0,0,0.5)'
+                        }}
                     />
                 )}
             </div>
 
-            {/* Large Play Button */}
-            {!isYouTube && (
+            {/* Audio Only UI: Large Play Button */}
+            {/* Show only if NOT YouTube AND NOT showing video */}
+            {!isYouTube && !showVideo && (
                 <button
                     onClick={togglePlay}
                     className={isPlaying ? 'playing-pulse' : ''}
@@ -151,7 +175,7 @@ export function AudioPlayer({ src, autoPlay = false }) {
                 </button>
             )}
 
-            {/* YouTube specific display placeholder if needed, or just keep controls */}
+            {/* YouTube specific display placeholder */}
             {isYouTube && (
                 <div style={{ color: '#aaa', fontSize: '0.9rem', marginBottom: '1rem' }}>
                     ※ YouTube動画は自動再生または動画をクリックして再生してください
@@ -159,44 +183,47 @@ export function AudioPlayer({ src, autoPlay = false }) {
             )}
 
             {/* Volume Control Bar */}
-            <div style={{
-                width: '100%',
-                background: '#222',
-                padding: '1rem 1.5rem',
-                borderRadius: '12px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '1rem',
-                border: '1px solid #333'
-            }}>
-                <div onClick={togglePlay} style={{ cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
-                    {isPlaying ? <Pause size={20} color="var(--er-primary)" /> : <Play size={20} color="#666" />}
-                </div>
+            {/* If video is shown with controls, we might not need this bar, but keeping it for consistency/safety is okay */}
+            {!showVideo && (
+                <div style={{
+                    width: '100%',
+                    background: '#222',
+                    padding: '1rem 1.5rem',
+                    borderRadius: '12px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '1rem',
+                    border: '1px solid #333'
+                }}>
+                    <div onClick={togglePlay} style={{ cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
+                        {isPlaying ? <Pause size={20} color="var(--er-primary)" /> : <Play size={20} color="#666" />}
+                    </div>
 
-                <Volume2 size={20} color="#888" />
+                    <Volume2 size={20} color="#888" />
 
-                <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
-                    <input
-                        type="range"
-                        min="0"
-                        max="100"
-                        value={volume}
-                        onChange={(e) => setVolume(Number(e.target.value))}
-                        style={{
-                            width: '100%',
-                            height: '6px',
-                            borderRadius: '3px',
-                            background: `linear-gradient(to right, var(--er-primary) ${volume}%, #444 ${volume}%)`,
-                            appearance: 'none',
-                            cursor: 'pointer'
-                        }}
-                        className="volume-slider"
-                    />
+                    <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
+                        <input
+                            type="range"
+                            min="0"
+                            max="100"
+                            value={volume}
+                            onChange={(e) => setVolume(Number(e.target.value))}
+                            style={{
+                                width: '100%',
+                                height: '6px',
+                                borderRadius: '3px',
+                                background: `linear-gradient(to right, var(--er-primary) ${volume}%, #444 ${volume}%)`,
+                                appearance: 'none',
+                                cursor: 'pointer'
+                            }}
+                            className="volume-slider"
+                        />
+                    </div>
+                    <span style={{ fontSize: '0.8rem', color: '#666', minWidth: '3ch', textAlign: 'right' }}>
+                        {volume}
+                    </span>
                 </div>
-                <span style={{ fontSize: '0.8rem', color: '#666', minWidth: '3ch', textAlign: 'right' }}>
-                    {volume}
-                </span>
-            </div>
+            )}
         </div>
     );
 }
