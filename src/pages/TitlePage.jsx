@@ -59,22 +59,25 @@ export function TitlePage() {
             </button>
 
             <div style={{ marginTop: '4rem', fontSize: '0.8rem', color: '#666', lineHeight: '1.6', textAlign: 'center' }}>
-                <div style={{ marginBottom: '1rem' }}>
+                <div style={{ marginBottom: '2rem' }}>
+                    <div>スキル音声はDAK.GGのスキル紹介から引用しています。一部スキルとは関係のない音が入る可能性もあります。</div>
+                    <div>스킬 사운드는 DAK.GG의 스킬 소개에서 인용하였습니다. 일부 스킬과 무관한 소리가 포함될 수 있습니다.</div>
+                    <div style={{ marginTop: '0.4rem' }}>
+                        引用元 / 출처: <a href="https://dak.gg/er" target="_blank" rel="noopener noreferrer" style={{ color: '#888' }}>https://dak.gg/er</a>
+                    </div>
+                </div>
+
+                <div style={{ marginBottom: '2rem', fontSize: '0.75rem', opacity: 0.8 }}>
+                    <div>このWEBアプリはRoratioとAntiGravityによって製作されました</div>
+                    <div>이 웹 앱은 Roratio와 AntiGravity에 의해 제작되었습니다</div>
+                </div>
+
+                <div>
                     <div>問題があった場合はTwitterからDMをしてください</div>
                     <div>문제가 발생하면 Twitter로 DM을 보내주세요</div>
                     <a href="https://x.com/Roratio2" target="_blank" rel="noopener noreferrer" style={{ color: '#1DA1F2', textDecoration: 'none', display: 'inline-block', marginTop: '0.2rem' }}>
                         @Roratio2
                     </a>
-                </div>
-
-                <div>スキル音声はDAK.GGのスキル紹介から引用しています。一部スキルとは関係のない音が入る可能性もあります。</div>
-                <div>스킬 사운드는 DAK.GG의 스킬 소개에서 인용하였습니다. 일부 스킬과 무관한 소리가 포함될 수 있습니다.</div>
-                <div style={{ marginTop: '0.4rem' }}>
-                    引用元 / 출처: <a href="https://dak.gg/er" target="_blank" rel="noopener noreferrer" style={{ color: '#888' }}>https://dak.gg/er</a>
-                </div>
-
-                <div style={{ marginTop: '2rem', fontSize: '0.75rem', opacity: 0.8 }}>
-                    このWEBアプリはRoratioとAntiGravityによって製作されました
                 </div>
             </div>
         </div>
