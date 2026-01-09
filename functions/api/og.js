@@ -1,47 +1,47 @@
 
-// Polyfill process for satori/yoga-wasm-web
-// This MUST be before imports because satori might use it on module load
-if (typeof process === 'undefined') {
-    globalThis.process = { env: {} };
-}
+import satori, { init } from 'satori/wasm';
+import initYoga from 'yoga-wasm-web';
+import { svg2png, initialize } from 'svg2png-wasm';
 
-// Import WASM module directly.
-// Cloudflare Pages Functions (Wrangler) treats *.wasm imports as WebAssembly.Module
-import resvgWasmModule from './resvg.wasm';
+// Import WASM modules statically
+// Cloudflare treats these as WebAssembly.Module
+import yogaWasm from './yoga.wasm';
+import svg2pngWasm from './svg2png_wasm_bg.wasm';
+
+// Initialize flag
+let initialized = false;
+
+async function initLibs() {
+    if (initialized) return;
+
+    // Initialize Yoga
+    const yoga = await initYoga(yogaWasm);
+    init(yoga);
+
+    // Initialize svg2png
+    await initialize(svg2pngWasm);
+
+    initialized = true;
+}
 
 export async function onRequest(context) {
     try {
-        // Dynamic import to ensure polyfill applies before module load
-        const { default: satori } = await import('satori');
-        const { initWasm, Resvg } = await import('@resvg/resvg-wasm');
-
-        // Initialize WASM with the imported module
-        // This avoids dynamic compilation errors
-        try {
-            await initWasm(resvgWasmModule);
-        } catch (e) {
-            // Already initialized or other issue
-            // console.warn(e);
-        }
+        await initLibs();
 
         const { request } = context;
         const url = new URL(request.url);
         const score = url.searchParams.get('score') || '0';
         const rankPct = url.searchParams.get('rank') || '-';
 
-        // Fetch a font (Required by Satori)
+        // Fetch font
         const fontUrl = 'https://cdn.jsdelivr.net/npm/@fontsource/noto-sans-jp@5.0.12/files/noto-sans-jp-japanese-700-normal.woff';
-
-        const fontData = await fetch(fontUrl)
+        const fontDataPromise = fetch(fontUrl)
             .then(res => {
                 if (!res.ok) throw new Error(`Failed to load font: ${res.status}`);
                 return res.arrayBuffer();
-            })
-            .catch(err => {
-                throw new Error(`Font fetch error: ${err.message}`);
             });
 
-        // Define the element (JSX-like object structure)
+        // Markup
         const markup = {
             type: 'div',
             props: {
@@ -194,7 +194,9 @@ export async function onRequest(context) {
             },
         };
 
-        // Generate SVG with Satori
+        const fontData = await fontDataPromise;
+
+        // Generate SVG
         const svg = await satori(markup, {
             width: 1200,
             height: 630,
@@ -208,9 +210,13 @@ export async function onRequest(context) {
             ],
         });
 
-        const resvg = new Resvg(svg);
-        const pngData = resvg.render();
-        const pngBuffer = pngData.asPng();
+        // Render to PNG using svg2png-wasm
+        // Note: svg2png implementation in wasm version might differ slightly in arguments
+        // article calls: svg2png(svg, { scale })
+        const pngBuffer = await svg2png(svg, {
+            scale: 1, // Default scale
+            // additional options if needed
+        });
 
         return new Response(pngBuffer, {
             headers: {
