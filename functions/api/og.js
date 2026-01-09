@@ -35,44 +35,17 @@ export async function onRequest(context) {
             style: {
                 display: 'flex',
                 flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
                 width: '100%',
                 height: '100%',
                 backgroundColor: '#1a1a1a',
                 color: 'white',
                 fontFamily: 'Noto Sans JP',
-                backgroundImage: 'linear-gradient(135deg, #1a1a1a 0%, #000000 100%)',
+                // Add a subtle grid or noise pattern equivalent if possible, or keep the dark gradient but cooler
+                backgroundImage: 'radial-gradient(circle at center, #2a2a2a 0%, #000000 100%)',
+                position: 'relative',
             },
             children: [
-                {
-                    type: 'div',
-                    props: {
-                        style: {
-                            fontSize: '60px',
-                            fontWeight: 'bold',
-                            marginBottom: '20px',
-                            color: '#ffffff',
-                        },
-                        children: 'Eternal Return スキル音当て',
-                    },
-                },
-                {
-                    type: 'div',
-                    props: {
-                        style: {
-                            fontSize: '120px',
-                            fontWeight: 'bold',
-                            color: '#facc15', // Yellow/Gold
-                            marginBottom: '20px',
-                            display: 'flex', // Needed for nested text
-                        },
-                        children: [
-                            { type: 'span', props: { children: score } },
-                            { type: 'span', props: { style: { fontSize: '60px', color: '#888', marginLeft: '20px', marginTop: '40px' }, children: '/ 10' } }
-                        ]
-                    },
-                },
+                // Main Content Center
                 {
                     type: 'div',
                     props: {
@@ -80,24 +53,126 @@ export async function onRequest(context) {
                             display: 'flex',
                             flexDirection: 'column',
                             alignItems: 'center',
-                            backgroundColor: '#333333',
-                            padding: '20px 40px',
-                            borderRadius: '20px',
-                            border: '2px solid #555',
+                            justifyContent: 'center',
+                            flex: 1,
+                            paddingBottom: '60px', // Space for footer
+                        },
+                        children: [
+                            // Result Label
+                            {
+                                type: 'div',
+                                props: {
+                                    style: {
+                                        fontSize: '40px',
+                                        fontWeight: 'bold',
+                                        color: '#cccccc',
+                                        marginBottom: '10px',
+                                        textShadow: '0 2px 4px rgba(0,0,0,0.8)',
+                                    },
+                                    children: '特務員行動記録 [結果診断]', // Mimicking the reference style wording
+                                },
+                            },
+                            // Main Title / Score Area
+                            {
+                                type: 'div',
+                                props: {
+                                    style: {
+                                        display: 'flex',
+                                        alignItems: 'baseline',
+                                        marginBottom: '30px',
+                                        textShadow: '0 4px 10px rgba(0,0,0,0.5)',
+                                    },
+                                    children: [
+                                        {
+                                            type: 'span',
+                                            props: {
+                                                style: { fontSize: '140px', fontWeight: '900', color: '#facc15', lineHeight: '1' },
+                                                children: score
+                                            }
+                                        },
+                                        {
+                                            type: 'span',
+                                            props: {
+                                                style: { fontSize: '50px', fontWeight: 'bold', color: '#888888', marginLeft: '20px' },
+                                                children: '/ 10 問正解'
+                                            }
+                                        }
+                                    ]
+                                },
+                            },
+                            // Rank Badge
+                            {
+                                type: 'div',
+                                props: {
+                                    style: {
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                                        border: '2px solid rgba(255, 255, 255, 0.2)',
+                                        borderRadius: '16px',
+                                        padding: '10px 40px',
+                                        boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+                                    },
+                                    children: [
+                                        {
+                                            type: 'div',
+                                            props: {
+                                                style: { fontSize: '24px', color: '#aaaaaa', marginBottom: '5px' },
+                                                children: 'RANKING / 당신의 순위',
+                                            },
+                                        },
+                                        {
+                                            type: 'div',
+                                            props: {
+                                                style: { fontSize: '50px', fontWeight: 'bold', color: '#4ade80', textShadow: '0 2px 4px rgba(0,0,0,0.5)' },
+                                                children: `Top ${rankPct}%`,
+                                            },
+                                        },
+                                    ],
+                                },
+                            },
+                        ],
+                    },
+                },
+                // Footer Bar mimicking the reference image
+                {
+                    type: 'div',
+                    props: {
+                        style: {
+                            position: 'absolute',
+                            bottom: 0,
+                            left: 0,
+                            right: 0,
+                            height: '70px',
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            padding: '0 40px',
+                            borderTop: '1px solid #333',
                         },
                         children: [
                             {
                                 type: 'div',
                                 props: {
-                                    style: { fontSize: '30px', color: '#aaaaaa', marginBottom: '10px' },
-                                    children: 'あなたのランク / 당신의 순위',
+                                    style: {
+                                        fontSize: '28px',
+                                        fontWeight: 'bold',
+                                        color: '#ffffff',
+                                    },
+                                    children: 'Eternal Return スキル音当て',
                                 },
                             },
                             {
                                 type: 'div',
                                 props: {
-                                    style: { fontSize: '60px', fontWeight: 'bold', color: '#4ade80' },
-                                    children: `上位 ${rankPct}%`,
+                                    style: {
+                                        marginLeft: 'auto',
+                                        fontSize: '20px',
+                                        color: '#888888',
+                                    },
+                                    children: 'otoate.pages.dev',
                                 },
                             },
                         ],
