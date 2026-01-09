@@ -1,24 +1,31 @@
-// 1. WASM関連は静的インポート（バンドルのため必須）
-import resvgWasm from './resvg.wasm';
-import { initWasm, Resvg } from '@resvg/resvg-wasm';
+// --- 1. WASMファイルの静的インポート (Bundling) ---
+// これによりWASMファイルがWebAssembly.Moduleとしてバンドルされます
+import resvgWasmModule from './resvg.wasm';
+import yogaWasmModule from './yoga.wasm';
 
-// 2. process ポリフィル
-// これを定義してから Satori を読み込む必要があります
+import { initWasm as initResvg, Resvg } from '@resvg/resvg-wasm';
+
+// process ポリフィル (Satori用)
 globalThis.process = globalThis.process || { env: {} };
 
 // 初期化フラグ
-let isWasmInitialized = false;
+let isInitialized = false;
 
 export async function onRequest(context) {
     try {
-        // 3. 【重要】Satoriをここで動的に読み込む
-        // こうすることで、上の process ポリフィルが確実に適用された後に読み込まれます
-        const { default: satori } = await import('satori');
+        // --- 2. Satori/wasm の読み込み ---
+        // 通常の 'satori' ではなく 'satori/wasm' を使います
+        const { default: satori, init: initSatori } = await import('satori/wasm');
 
-        // 4. WASMの初期化（初回のみ）
-        if (!isWasmInitialized) {
-            await initWasm(resvgWasm);
-            isWasmInitialized = true;
+        // --- 3. WASMの初期化 (初回のみ) ---
+        if (!isInitialized) {
+            // Satori (Yoga) の初期化
+            await initSatori(yogaWasmModule);
+            
+            // Resvg の初期化
+            await initResvg(resvgWasmModule);
+            
+            isInitialized = true;
         }
 
         const { request } = context;
