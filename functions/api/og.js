@@ -14,15 +14,23 @@ export async function onRequest(context) {
     const rankPct = url.searchParams.get('rank') || '-';
 
     // Fetch a font (Required by Satori)
-    // We'll use a public URL for a font or a bundled one. Fetching from Google Fonts is standard.
-    // Noto Sans JP for Japanese support.
-    const fontData = await fetch('https://github.com/googlefonts/noto-cjk/raw/main/Sans/Variable/ttf/NotoSansCJKjp-VF.ttf')
-        .then(res => res.arrayBuffer())
-        .catch(() => null);
+    // Use a specific subset (Japanese) from a CDN to avoid large file size timeouts (GitHub raw was 18MB+)
+    // Satori supports WOFF.
+    const fontUrl = 'https://cdn.jsdelivr.net/npm/@fontsource/noto-sans-jp@5.0.12/files/noto-sans-jp-japanese-700-normal.woff';
+
+    const fontData = await fetch(fontUrl)
+        .then(res => {
+            if (!res.ok) throw new Error('Failed to load font');
+            return res.arrayBuffer();
+        })
+        .catch(err => {
+            console.error(err);
+            return null;
+        });
 
     if (!fontData) {
         // Fallback or error if font fails
-        // Usually we should have a fallback font
+        return new Response(JSON.stringify({ error: "Font load failed" }), { status: 500 });
     }
 
     // Define the element (JSX-like object structure since we don't have JSX transpilation here without setup)
