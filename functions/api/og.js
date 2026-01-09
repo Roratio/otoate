@@ -1,21 +1,26 @@
 import { initWasm, Resvg } from '@resvg/resvg-wasm';
 import satori from 'satori';
-// 手順1で配置したwasmファイルをインポート
+// 配置したwasmファイルをインポート
 import resvgWasm from './resvg.wasm';
 
-// WASMの初期化（トップレベルで一度だけ実行）
-// CloudflareではインポートしたWASMはWebAssembly.Moduleとして扱われます
-await initWasm(resvgWasm);
+// 初期化済みかどうかのフラグ
+let isWasmInitialized = false;
 
 export async function onRequest(context) {
     try {
+        // --- 修正箇所：初期化を関数内で行う ---
+        if (!isWasmInitialized) {
+            await initWasm(resvgWasm);
+            isWasmInitialized = true;
+        }
+        // ------------------------------------
+
         const { request } = context;
         const url = new URL(request.url);
         const score = url.searchParams.get('score') || '0';
         const rankPct = url.searchParams.get('rank') || '-';
 
         // フォントの読み込み (CDN)
-        // ※フォントはWASMではないのでfetchのままでOKです
         const fontUrl = 'https://cdn.jsdelivr.net/npm/@fontsource/noto-sans-jp@5.0.12/files/noto-sans-jp-japanese-700-normal.woff';
         const fontData = await fetch(fontUrl).then(res => {
             if (!res.ok) throw new Error(`Failed to load font: ${res.status}`);
