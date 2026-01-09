@@ -289,7 +289,7 @@ export function GamePage() {
                         </div>
 
                         <button onClick={handleNext} style={{ width: '100%', background: 'var(--er-primary)', color: 'black', fontWeight: 'bold' }}>
-                            {currentIndex + 1 >= 10 ? '結果を見る' : '次の問題へ'}
+                            {currentIndex + 1 >= 10 ? '結果を見る / 결과 보기' : '次の問題へ / 다음 문제'}
                         </button>
                     </div>
                 )}
