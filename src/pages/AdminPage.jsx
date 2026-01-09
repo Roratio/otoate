@@ -116,14 +116,15 @@ export function AdminPage() {
             // Refresh list
             fetchQuestions();
 
-            // Reset Form (unless error)
-            setFormData({
+            // Reset Form (keep character/skillKey for faster entry)
+            setFormData(prev => ({
+                ...prev,
                 driveLink: '',
-                character: '',
-                skillKey: 'Q',
                 skillName: '',
-                skin: 'Default'
-            });
+                // character: prev.character, // keep
+                // skillKey: prev.skillKey,   // keep
+                // skin: prev.skin            // keep
+            }));
             setPreviewSrc('');
 
             // Clear success message after 3s
