@@ -57,6 +57,14 @@ export function TitlePage() {
                 <Play fill="black" size={28} />
                 GAME START
             </button>
+
+            <div style={{ marginTop: '4rem', fontSize: '0.8rem', color: '#666', lineHeight: '1.6', textAlign: 'center' }}>
+                <div>スキル音声はDAK.GGのスキル紹介から引用しています。一部スキルとは関係のない音が入る可能性もあります。</div>
+                <div>스킬 사운드는 DAK.GG의 스킬 소개에서 인용하였습니다. 일부 스킬과 무관한 소리가 포함될 수 있습니다.</div>
+                <div style={{ marginTop: '0.4rem' }}>
+                    引用元 / 출처: <a href="https://dak.gg/er" target="_blank" rel="noopener noreferrer" style={{ color: '#888' }}>https://dak.gg/er</a>
+                </div>
+            </div>
         </div>
     );
 }
