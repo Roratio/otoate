@@ -78,28 +78,38 @@ export function GamePage() {
 
     const calculateRanking = async (finalScore) => {
         try {
-            // 1. Save Result
+            // 1. Save Result (Write is cheap and necessary)
             await addDoc(collection(db, "results"), {
                 score: finalScore,
                 date: serverTimestamp()
             });
 
-            // 2. Fetch All Results (This might be heavy in production, but okay for MVP)
-            const resultsParams = await getDocs(collection(db, "results"));
-            const allScores = resultsParams.docs.map(d => d.data().score);
+            // 2. Fetch Aggregated Ranking from Cloudflare Functions API
+            // This reduces Firestore reads significantly by caching the result on the server
+            const response = await fetch('/api/ranking');
+            if (!response.ok) {
+                console.error("Ranking API error:", response.statusText);
+                // Fallback or just show nothing if API fails?
+                return;
+            }
 
-            // 3. Calculate Rank
-            const total = allScores.length;
-            const betterOrEqual = allScores.filter(s => s >= finalScore).length; // Rank (1st is best)
-            // Strict rank (how many represent "better" score) + 1
-            // Simple percentile: How many people did you beat?
-            // "Top X%" logic
-            const better = allScores.filter(s => s > finalScore).length;
+            const { total, distribution } = await response.json();
+
+            // 3. Calculate Rank locally based on distribution
+            // distribution = { "10": 5, "9": 3, ... }
+            let better = 0;
+            for (const sStr in distribution) {
+                const s = parseInt(sStr, 10);
+                if (s > finalScore) {
+                    better += distribution[sStr];
+                }
+            }
+
             const rank = better + 1;
             const percent = (rank / total) * 100;
 
             setRankingData({
-                percent: percent.toFixed(1), // e.g. "12.5"
+                percent: percent.toFixed(1),
                 rank: rank,
                 total: total
             });
