@@ -1,52 +1,44 @@
-import { initWasm as initResvg, Resvg } from '@resvg/resvg-wasm';
-import initYoga from 'yoga-wasm-web';
 
-// process ポリフィル (Satori用)
-globalThis.process = globalThis.process || { env: {} };
-
-// 初期化フラグ
-let isInitialized = false;
+// Polyfill process for satori/yoga-wasm-web
+// This MUST be before imports because satori might use it on module load
+if (typeof process === 'undefined') {
+    globalThis.process = { env: {} };
+}
 
 export async function onRequest(context) {
     try {
-        // 1. Satoriの動的インポート
-        const { default: satori, init: initSatori } = await import('satori');
-
-        // 2. 初期化処理 (初回のみ)
-        if (!isInitialized) {
-            // (A) Yoga (レイアウトエンジン) の読み込み
-            // CDNから取得し、compileStreaming でモジュール化します (これで制限を回避)
-            const yogaUrl = 'https://unpkg.com/yoga-wasm-web@0.3.3/dist/yoga.wasm';
-            const yogaResponse = await fetch(yogaUrl);
-            const yogaModule = await WebAssembly.compileStreaming(yogaResponse);
-            
-            // モジュールを渡して初期化
-            const yoga = await initYoga(yogaModule);
-            initSatori(yoga);
-            
-            // (B) Resvg (画像変換) の読み込み
-            const resvgUrl = 'https://unpkg.com/@resvg/resvg-wasm@2.6.2/index_bg.wasm';
-            const resvgResponse = await fetch(resvgUrl);
-            const resvgModule = await WebAssembly.compileStreaming(resvgResponse);
-            
-            await initResvg(resvgModule);
-            
-            isInitialized = true;
-        }
+        // Dynamic import to ensure polyfill applies before module load
+        const { default: satori } = await import('satori');
+        const { initWasm, Resvg } = await import('@resvg/resvg-wasm');
 
         const { request } = context;
         const url = new URL(request.url);
         const score = url.searchParams.get('score') || '0';
         const rankPct = url.searchParams.get('rank') || '-';
 
-        // フォント読み込み (CDN)
+        // Fetch a font (Required by Satori)
         const fontUrl = 'https://cdn.jsdelivr.net/npm/@fontsource/noto-sans-jp@5.0.12/files/noto-sans-jp-japanese-700-normal.woff';
-        const fontData = await fetch(fontUrl).then(res => {
-            if (!res.ok) throw new Error(`Failed to load font: ${res.status}`);
-            return res.arrayBuffer();
-        });
 
-        // 画像レイアウト定義 (Satori)
+        const fontDataPromise = fetch(fontUrl)
+            .then(res => {
+                if (!res.ok) throw new Error(`Failed to load font: ${res.status}`);
+                return res.arrayBuffer();
+            });
+
+        // Fetch WASM manually from our own public assets
+        // We copied index_bg.wasm to public/resvg.wasm
+        const wasmUrl = `${url.origin}/resvg.wasm`;
+        const wasmDataPromise = fetch(wasmUrl)
+            .then(res => {
+                if (!res.ok) throw new Error(`Failed to load WASM from ${wasmUrl}: ${res.status}`);
+                return res.arrayBuffer();
+            });
+
+        // Wait for both parallely
+        const [fontData, wasmData] = await Promise.all([fontDataPromise, wasmDataPromise]);
+
+
+        // Define the element (JSX-like object structure)
         const markup = {
             type: 'div',
             props: {
@@ -62,6 +54,7 @@ export async function onRequest(context) {
                     position: 'relative',
                 },
                 children: [
+                    // Main Content Center
                     {
                         type: 'div',
                         props: {
@@ -71,9 +64,10 @@ export async function onRequest(context) {
                                 alignItems: 'center',
                                 justifyContent: 'center',
                                 flex: 1,
-                                paddingBottom: '60px',
+                                paddingBottom: '60px', // Space for footer
                             },
                             children: [
+                                // Result Label
                                 {
                                     type: 'div',
                                     props: {
@@ -87,6 +81,7 @@ export async function onRequest(context) {
                                         children: '特務員行動記録 [結果診断]',
                                     },
                                 },
+                                // Main Title / Score Area
                                 {
                                     type: 'div',
                                     props: {
@@ -114,6 +109,7 @@ export async function onRequest(context) {
                                         ]
                                     },
                                 },
+                                // Rank Badge
                                 {
                                     type: 'div',
                                     props: {
@@ -149,6 +145,7 @@ export async function onRequest(context) {
                             ],
                         },
                     },
+                    // Footer Bar
                     {
                         type: 'div',
                         props: {
@@ -194,7 +191,7 @@ export async function onRequest(context) {
             },
         };
 
-        // SVG生成 (Satori)
+        // Generate SVG with Satori
         const svg = await satori(markup, {
             width: 1200,
             height: 630,
@@ -208,7 +205,15 @@ export async function onRequest(context) {
             ],
         });
 
-        // PNG変換 (Resvg)
+        // Initialize Resvg WASM with ArrayBuffer
+        // This bypasses compileStreaming
+        try {
+            await initWasm(wasmData);
+        } catch (e) {
+            // It might be already initialized or handle itself
+            // console.warn("WASM init warning:", e);
+        }
+
         const resvg = new Resvg(svg);
         const pngData = resvg.render();
         const pngBuffer = pngData.asPng();
@@ -220,7 +225,6 @@ export async function onRequest(context) {
             },
         });
     } catch (err) {
-        console.error(err);
         return new Response(JSON.stringify({
             error: "OGP Generation Failed",
             message: err.message,
