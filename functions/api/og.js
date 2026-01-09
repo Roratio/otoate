@@ -1,21 +1,13 @@
 // Polyfill process for satori/yoga-wasm-web
-// This MUST be before imports because satori might use it on module load
 if (typeof process === 'undefined') {
     globalThis.process = { env: {} };
 }
 
-import satori from 'satori';
-import { initWasm, Resvg } from '@resvg/resvg-wasm';
-
-// Initialize WASM
-// Cloudflare Pages Functions environment usually needs WASM loaded.
-// However, @resvg/resvg-wasm acts a bit differently in CF Workers.
-// We might need to import the wasm file or rely on the package to handle it if utilizing modules.
-// For simplicity in standard node/module envs, we'll try standard import.
-// If it fails on deployment, we might need a workaround for loading WASM.
-
-
 export async function onRequest(context) {
+    // Dynamic import to ensure polyfill applies before module load
+    const { default: satori } = await import('satori');
+    const { initWasm, Resvg } = await import('@resvg/resvg-wasm');
+
     const { request } = context;
     const url = new URL(request.url);
     const score = url.searchParams.get('score') || '0';
