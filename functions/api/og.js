@@ -1,4 +1,5 @@
 
+import './polyfill.js';
 import satori, { init } from 'satori';
 import initYoga from 'yoga-wasm-web';
 import { svg2png, initialize } from 'svg2png-wasm';
