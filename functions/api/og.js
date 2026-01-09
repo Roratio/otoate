@@ -76,13 +76,50 @@ export async function onRequest(context) {
                                     type: 'div',
                                     props: {
                                         style: {
-                                            fontSize: '40px',
-                                            fontWeight: 'bold',
-                                            color: '#cccccc',
+                                            display: 'flex',
+                                            flexDirection: 'column',
+                                            alignItems: 'center',
                                             marginBottom: '10px',
-                                            textShadow: '0 2px 4px rgba(0,0,0,0.8)',
                                         },
-                                        children: '特務員行動記録 [結果診断]',
+                                        children: [
+                                            {
+                                                type: 'div',
+                                                props: {
+                                                    style: {
+                                                        fontSize: '32px',
+                                                        fontWeight: 'bold',
+                                                        color: '#cccccc',
+                                                        textShadow: '0 2px 4px rgba(0,0,0,0.8)',
+                                                    },
+                                                    children: 'エターナルリターン',
+                                                },
+                                            },
+                                            {
+                                                type: 'div',
+                                                props: {
+                                                    style: {
+                                                        fontSize: '32px',
+                                                        fontWeight: 'bold',
+                                                        color: '#cccccc',
+                                                        textShadow: '0 2px 4px rgba(0,0,0,0.8)',
+                                                    },
+                                                    children: 'スキル音当てゲーム',
+                                                },
+                                            },
+                                            {
+                                                type: 'div',
+                                                props: {
+                                                    style: {
+                                                        fontSize: '24px',
+                                                        fontWeight: 'bold',
+                                                        color: '#aaaaaa',
+                                                        marginTop: '4px',
+                                                        textShadow: '0 2px 4px rgba(0,0,0,0.8)',
+                                                    },
+                                                    children: '이터널 리턴 스킬 음대 게임',
+                                                },
+                                            },
+                                        ],
                                     },
                                 },
                                 // Main Title / Score Area
