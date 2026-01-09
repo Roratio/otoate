@@ -1,3 +1,8 @@
+// --- 1. Satori用のPolyfill (これが無いとエラーになります) ---
+if (typeof process === 'undefined') {
+    globalThis.process = { env: {} };
+}
+
 import { initWasm, Resvg } from '@resvg/resvg-wasm';
 import satori from 'satori';
 // 配置したwasmファイルをインポート
@@ -8,12 +13,11 @@ let isWasmInitialized = false;
 
 export async function onRequest(context) {
     try {
-        // --- 修正箇所：初期化を関数内で行う ---
+        // --- 2. WASM初期化 (関数内で実行) ---
         if (!isWasmInitialized) {
             await initWasm(resvgWasm);
             isWasmInitialized = true;
         }
-        // ------------------------------------
 
         const { request } = context;
         const url = new URL(request.url);
