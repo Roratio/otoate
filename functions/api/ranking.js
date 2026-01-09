@@ -16,7 +16,8 @@ export async function onRequest(context) {
         // This results in constant cost (11 reads) regardless of user base size (e.g. 10k users).
 
         const scores = Array.from({ length: 11 }, (_, i) => i); // [0, 1, ..., 10]
-        const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/results:runAggregationQuery?key=${apiKey}`;
+        // Correct URL for root collection query: parent is ".../documents"
+        const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents:runAggregationQuery?key=${apiKey}`;
 
         // Create 11 parallel fetching promises
         const countPromises = scores.map(async (score) => {
