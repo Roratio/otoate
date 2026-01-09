@@ -150,13 +150,13 @@ export function GamePage() {
     };
 
     const getShareUrl = () => {
-        const text = `【Eternal Return スキル音当て】\nスコア: ${score}/10\n上位 ${rankingData ? rankingData.percent : '-'}%\n\nあなたも挑戦しよう！`;
+        const text = `【Eternal Return スキル音当て / 이터널 리턴 스킬 음대 게임】\nスコア / 점수: ${score}/10\n上位 / 상위 ${rankingData ? rankingData.percent : '-'}%\n\nあなたも挑戦しよう！ / 당신도 도전해보세요!`;
 
         // Use the dynamic share page for the card URL
         const origin = window.location.origin;
         const sharePageUrl = `${origin}/share?score=${score}&rank=${rankingData ? rankingData.percent : '-'}`;
 
-        const hashtags = "ERスキル音当て,エターナルリターン";
+        const hashtags = "ERスキル音当て,エターナルリターン,이터널리턴,EternalReturn";
         // Note: Twitter uses the 'url' parameter for the card. 
         // We pass our dynamic HTML page as the URL being shared.
         return `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(sharePageUrl)}&hashtags=${encodeURIComponent(hashtags)}`;
