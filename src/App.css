@@ -1,0 +1,4 @@
+/* Clean up default Vite styles */
+.app-container {
+  width: 100%;
+}
