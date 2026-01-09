@@ -1,14 +1,11 @@
-// 1. WASMファイルをモジュールとして読み込み (Cloudflare Pagesで必須)
+// 1. WASMとYogaは静的インポートのままでOK
 import resvgWasmModule from './resvg.wasm';
 import yogaWasmModule from './yoga.wasm';
-
-// 2. 各ライブラリの初期化関数をインポート
 import { initWasm as initResvg, Resvg } from '@resvg/resvg-wasm';
 import initYoga from 'yoga-wasm-web';
-// ここを 'satori' に戻し、init（初期化用関数）も一緒に取ります
-import satori, { init as initSatori } from 'satori';
 
-// 3. process ポリフィル (Satori用)
+// 2. process ポリフィルを定義
+// これが実行された後に satori を読み込む必要があります
 globalThis.process = globalThis.process || { env: {} };
 
 // 初期化フラグ
@@ -16,14 +13,19 @@ let isInitialized = false;
 
 export async function onRequest(context) {
     try {
-        // 4. まとめて初期化 (初回のみ)
+        // 3. 【重要】Satoriをここで「動的インポート」する
+        // await import() を使うことで、上のポリフィル適用後に読み込まれます
+        const { default: satori, init: initSatori } = await import('satori');
+
+        // 4. 初期化処理 (初回のみ)
         if (!isInitialized) {
-            // (A) Yoga (Satoriのレイアウトエンジン) を初期化
+            // (A) Yoga (レイアウトエンジン) を初期化
             const yoga = await initYoga(yogaWasmModule);
-            // (B) Satoriに、初期化したYogaを渡す (これで勝手にWASMを読もうとしなくなります)
+            
+            // (B) SatoriにYogaを渡す
             initSatori(yoga);
             
-            // (C) Resvg (PNG変換) を初期化
+            // (C) Resvg (画像変換) を初期化
             await initResvg(resvgWasmModule);
             
             isInitialized = true;
@@ -41,7 +43,7 @@ export async function onRequest(context) {
             return res.arrayBuffer();
         });
 
-        // 画像レイアウトの定義
+        // 画像レイアウトの定義 (Satori)
         const markup = {
             type: 'div',
             props: {
