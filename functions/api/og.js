@@ -8,7 +8,11 @@ import { initWasm, Resvg } from '@resvg/resvg-wasm';
 // We might need to import the wasm file or rely on the package to handle it if utilizing modules.
 // For simplicity in standard node/module envs, we'll try standard import.
 // If it fails on deployment, we might need a workaround for loading WASM.
-// Note: importing 'index_bg.wasm' might be needed.
+// Polyfill process for satori/yoga-wasm-web
+if (typeof process === 'undefined') {
+    globalThis.process = { env: {} };
+}
+
 
 export async function onRequest(context) {
     const { request } = context;
