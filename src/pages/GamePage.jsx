@@ -239,7 +239,7 @@ export function GamePage() {
                             color: feedback === 'correct' ? '#4ade80' : '#ef4444',
                             marginBottom: '1rem'
                         }}>
-                            {feedback === 'correct' ? '正解！' : '不正解...'}
+                            {feedback === 'correct' ? '正解！ / 정답!' : '不正解... / 오답...'}
                         </div>
 
                         <div style={{ marginBottom: '2rem', color: 'var(--er-text-muted)' }}>
