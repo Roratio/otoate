@@ -72,6 +72,10 @@ export function TitlePage() {
                 <div style={{ marginTop: '0.4rem' }}>
                     引用元 / 출처: <a href="https://dak.gg/er" target="_blank" rel="noopener noreferrer" style={{ color: '#888' }}>https://dak.gg/er</a>
                 </div>
+
+                <div style={{ marginTop: '2rem', fontSize: '0.75rem', opacity: 0.8 }}>
+                    このWEBアプリはRoratioとAntiGravityによって製作されました
+                </div>
             </div>
         </div>
     );
