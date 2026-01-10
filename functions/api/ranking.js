@@ -28,7 +28,8 @@ export async function onRequest(context) {
 
         scores.forEach(score => {
             // Integer Filter
-            promises.push(fetchCount(url, score, 'integerValue', score));
+            // IMPORTANT: Firestore REST API requires integerValue to be a STRING (int64)
+            promises.push(fetchCount(url, score, 'integerValue', String(score)));
             // String Filter
             promises.push(fetchCount(url, score, 'stringValue', String(score)));
         });
