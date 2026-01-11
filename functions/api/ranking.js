@@ -72,17 +72,19 @@ export async function onRequest(context) {
 // Helper to fetch count for a specific value/type
 async function fetchCount(url, score, typeKey, value) {
     const body = {
-        structuredQuery: {
-            from: [{ collectionId: "results" }],
-            where: {
-                fieldFilter: {
-                    field: { fieldPath: "score" },
-                    op: "EQUAL",
-                    value: { [typeKey]: value }
+        structuredAggregationQuery: {
+            structuredQuery: {
+                from: [{ collectionId: "results" }],
+                where: {
+                    fieldFilter: {
+                        field: { fieldPath: "score" },
+                        op: "EQUAL",
+                        value: { [typeKey]: value }
+                    }
                 }
-            }
-        },
-        aggregations: [{ alias: "count", count: {} }]
+            },
+            aggregations: [{ alias: "count", count: {} }]
+        }
     };
 
     try {
