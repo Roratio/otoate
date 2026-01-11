@@ -10,28 +10,29 @@ export function TitlePage() {
     const [questions, setQuestions] = useState([]);
 
     useEffect(() => {
-        const fetchQuestions = async () => {
-            const CACHE_KEY = 'otoate_questions_cache';
-            const CACHE_EXPIRY = 60 * 60 * 1000; // 1時間
+        const fetchData = async () => {
+            const QUESTIONS_CACHE_KEY = 'otoate_questions_cache';
+            const QUESTIONS_CACHE_EXPIRY = 60 * 60 * 1000; // 1時間
 
-            // キャッシュの確認
-            const cached = localStorage.getItem(CACHE_KEY);
+            const RANKING_CACHE_KEY = 'otoate_ranking_cache';
+            const RANKING_CACHE_EXPIRY = 3 * 60 * 60 * 1000; // 3時間
+
+            // 1. Fetch Questions
             let qList = [];
+            const cachedQuestions = localStorage.getItem(QUESTIONS_CACHE_KEY);
 
-            if (cached) {
+            if (cachedQuestions) {
                 try {
-                    const parsed = JSON.parse(cached);
-                    const now = Date.now();
-                    if (now - parsed.timestamp < CACHE_EXPIRY) {
+                    const parsed = JSON.parse(cachedQuestions);
+                    if (Date.now() - parsed.timestamp < QUESTIONS_CACHE_EXPIRY) {
                         console.log("Using cached questions (TitlePage)");
                         qList = parsed.data;
                     }
                 } catch (e) {
-                    console.error("Cache parse error", e);
+                    console.error("Questions cache parse error", e);
                 }
             }
 
-            // キャッシュがない、または期限切れの場合は取得
             if (qList.length === 0) {
                 try {
                     console.log("Fetching questions from Firestore (TitlePage)");
@@ -41,8 +42,7 @@ export function TitlePage() {
                         ...doc.data()
                     }));
 
-                    // キャッシュに保存
-                    localStorage.setItem(CACHE_KEY, JSON.stringify({
+                    localStorage.setItem(QUESTIONS_CACHE_KEY, JSON.stringify({
                         data: qList,
                         timestamp: Date.now()
                     }));
@@ -50,12 +50,47 @@ export function TitlePage() {
                     console.error("Error fetching questions:", error);
                 }
             }
-
             setQuestions(qList);
+
+            // 2. Fetch Ranking (Parallel-ish but simple here)
+            // Check Ranking Cache
+            const cachedRanking = localStorage.getItem(RANKING_CACHE_KEY);
+            let shouldFetchRanking = true;
+
+            if (cachedRanking) {
+                try {
+                    const parsed = JSON.parse(cachedRanking);
+                    if (Date.now() - parsed.timestamp < RANKING_CACHE_EXPIRY) {
+                        console.log("Using cached ranking (TitlePage)");
+                        shouldFetchRanking = false;
+                    }
+                } catch (e) {
+                    console.error("Ranking cache parse error", e);
+                }
+            }
+
+            if (shouldFetchRanking) {
+                try {
+                    console.log("Fetching ranking from API (TitlePage)");
+                    const response = await fetch('/api/ranking');
+                    if (response.ok) {
+                        const data = await response.json();
+                        localStorage.setItem(RANKING_CACHE_KEY, JSON.stringify({
+                            data: data,
+                            timestamp: Date.now()
+                        }));
+                    } else {
+                        console.error("Ranking API error:", response.statusText);
+                    }
+                } catch (error) {
+                    console.error("Error fetching ranking:", error);
+                }
+            }
+
             setLoading(false);
         };
 
-        fetchQuestions();
+        fetchData();
     }, []);
 
     const handleStart = () => {

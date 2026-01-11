@@ -77,16 +77,32 @@ export function GamePage() {
                 date: serverTimestamp()
             });
 
-            // 2. Fetch Aggregated Ranking from Cloudflare Functions API
-            // This reduces Firestore reads significantly by caching the result on the server
-            const response = await fetch('/api/ranking');
-            if (!response.ok) {
-                console.error("Ranking API error:", response.statusText);
-                // Fallback or just show nothing if API fails?
+            // 2. Fetch Aggregated Ranking from Cache
+            const RANKING_CACHE_KEY = 'otoate_ranking_cache';
+            const cachedRanking = localStorage.getItem(RANKING_CACHE_KEY);
+
+            let total = 0;
+            let distribution = {};
+
+            if (cachedRanking) {
+                try {
+                    const parsed = JSON.parse(cachedRanking);
+                    // Use cache regardless of expiry (TitlePage handles refresh, here we just read whatever is there)
+                    // Or we could check expiry, but falling back to what? 
+                    // Requirement says fetch at TitlePage. So just use what we have.
+                    console.log("Using cached ranking data (GamePage)");
+                    total = parsed.data.total;
+                    distribution = parsed.data.distribution;
+                } catch (e) {
+                    console.error("Ranking cache parse error", e);
+                    return; // No ranking data available
+                }
+            } else {
+                console.log("No partial ranking cache found (GamePage)");
+                // Fallback: Optional (?) 
+                // Maybe just return? 
                 return;
             }
-
-            const { total, distribution } = await response.json();
 
             // 3. Calculate Rank locally based on distribution
             // distribution = { "10": 5, "9": 3, ... }
