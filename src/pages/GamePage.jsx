@@ -87,21 +87,38 @@ export function GamePage() {
             if (cachedRanking) {
                 try {
                     const parsed = JSON.parse(cachedRanking);
-                    // Use cache regardless of expiry (TitlePage handles refresh, here we just read whatever is there)
-                    // Or we could check expiry, but falling back to what? 
-                    // Requirement says fetch at TitlePage. So just use what we have.
                     console.log("Using cached ranking data (GamePage)");
                     total = parsed.data.total;
                     distribution = parsed.data.distribution;
                 } catch (e) {
                     console.error("Ranking cache parse error", e);
-                    return; // No ranking data available
+                    // Parse error -> continue to fallback
                 }
-            } else {
-                console.log("No partial ranking cache found (GamePage)");
-                // Fallback: Optional (?) 
-                // Maybe just return? 
-                return;
+            }
+
+            // Fallback: If no cache or parse error, fetch from API
+            if (total === 0) {
+                console.log("No partial ranking cache found, fetching from API (GamePage fallback)");
+                try {
+                    const response = await fetch('/api/ranking');
+                    if (response.ok) {
+                        const data = await response.json();
+                        total = data.total;
+                        distribution = data.distribution;
+
+                        // Save to cache for next time (recover self-healing)
+                        localStorage.setItem(RANKING_CACHE_KEY, JSON.stringify({
+                            data: data,
+                            timestamp: Date.now()
+                        }));
+                    } else {
+                        console.error("Ranking API error:", response.statusText);
+                        return;
+                    }
+                } catch (error) {
+                    console.error("Error fetching ranking (fallback):", error);
+                    return;
+                }
             }
 
             // 3. Calculate Rank locally based on distribution
