@@ -136,8 +136,17 @@ export function GamePage() {
             const effectiveTotal = Math.max(total, rank);
             const percent = (rank / effectiveTotal) * 100;
 
+            // 0.0% と表示されるのを防ぐ
+            let percentDisplay = percent.toFixed(1);
+            if (percent < 0.1) {
+                percentDisplay = "< 0.1";
+            } else if (percentDisplay === "0.0") {
+                // toFixedで丸められて0.0になった場合（例：0.04%）
+                percentDisplay = "< 0.1";
+            }
+
             setRankingData({
-                percent: percent.toFixed(1),
+                percent: percentDisplay,
                 rank: rank,
                 total: effectiveTotal
             });
