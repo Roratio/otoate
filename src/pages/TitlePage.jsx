@@ -1,9 +1,66 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Play } from 'lucide-react';
+import { collection, getDocs } from 'firebase/firestore';
+import { db } from '../firebase';
 
 export function TitlePage() {
     const navigate = useNavigate();
+    const [loading, setLoading] = useState(true);
+    const [questions, setQuestions] = useState([]);
+
+    useEffect(() => {
+        const fetchQuestions = async () => {
+            const CACHE_KEY = 'otoate_questions_cache';
+            const CACHE_EXPIRY = 60 * 60 * 1000; // 1時間
+
+            // キャッシュの確認
+            const cached = localStorage.getItem(CACHE_KEY);
+            let qList = [];
+
+            if (cached) {
+                try {
+                    const parsed = JSON.parse(cached);
+                    const now = Date.now();
+                    if (now - parsed.timestamp < CACHE_EXPIRY) {
+                        console.log("Using cached questions (TitlePage)");
+                        qList = parsed.data;
+                    }
+                } catch (e) {
+                    console.error("Cache parse error", e);
+                }
+            }
+
+            // キャッシュがない、または期限切れの場合は取得
+            if (qList.length === 0) {
+                try {
+                    console.log("Fetching questions from Firestore (TitlePage)");
+                    const querySnapshot = await getDocs(collection(db, "questions"));
+                    qList = querySnapshot.docs.map(doc => ({
+                        id: doc.id,
+                        ...doc.data()
+                    }));
+
+                    // キャッシュに保存
+                    localStorage.setItem(CACHE_KEY, JSON.stringify({
+                        data: qList,
+                        timestamp: Date.now()
+                    }));
+                } catch (error) {
+                    console.error("Error fetching questions:", error);
+                }
+            }
+
+            setQuestions(qList);
+            setLoading(false);
+        };
+
+        fetchQuestions();
+    }, []);
+
+    const handleStart = () => {
+        navigate('/game', { state: { questions: questions } });
+    };
 
     return (
         <div className="container" style={{ minHeight: '80vh', justifyContent: 'center' }}>
@@ -30,32 +87,44 @@ export function TitlePage() {
             </div>
 
             <button
-                onClick={() => navigate('/game')}
+                onClick={handleStart}
+                disabled={loading}
                 style={{
                     padding: '1.5rem 4rem',
                     fontSize: '1.5rem',
                     fontWeight: 'bold',
-                    background: 'var(--er-primary)',
-                    color: '#000',
+                    background: loading ? '#555' : 'var(--er-primary)',
+                    color: loading ? '#888' : '#000',
                     border: 'none',
                     borderRadius: '50px',
                     display: 'flex',
                     alignItems: 'center',
                     gap: '1rem',
-                    boxShadow: '0 0 20px rgba(245, 158, 11, 0.4)',
-                    transition: 'transform 0.2s, box-shadow 0.2s'
+                    boxShadow: loading ? 'none' : '0 0 20px rgba(245, 158, 11, 0.4)',
+                    transition: 'transform 0.2s, box-shadow 0.2s',
+                    cursor: loading ? 'not-allowed' : 'pointer'
                 }}
                 onMouseOver={(e) => {
-                    e.currentTarget.style.transform = 'scale(1.05)';
-                    e.currentTarget.style.boxShadow = '0 0 30px rgba(245, 158, 11, 0.6)';
+                    if (!loading) {
+                        e.currentTarget.style.transform = 'scale(1.05)';
+                        e.currentTarget.style.boxShadow = '0 0 30px rgba(245, 158, 11, 0.6)';
+                    }
                 }}
                 onMouseOut={(e) => {
-                    e.currentTarget.style.transform = 'scale(1)';
-                    e.currentTarget.style.boxShadow = '0 0 20px rgba(245, 158, 11, 0.4)';
+                    if (!loading) {
+                        e.currentTarget.style.transform = 'scale(1)';
+                        e.currentTarget.style.boxShadow = '0 0 20px rgba(245, 158, 11, 0.4)';
+                    }
                 }}
             >
-                <Play fill="black" size={28} />
-                GAME START
+                {loading ? (
+                    <span>LOADING...</span>
+                ) : (
+                    <>
+                        <Play fill="black" size={28} />
+                        GAME START
+                    </>
+                )}
             </button>
 
             <div style={{ marginTop: '4rem', fontSize: '0.8rem', color: '#666', lineHeight: '1.6', textAlign: 'center' }}>

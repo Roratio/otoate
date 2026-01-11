@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { AudioPlayer } from '../components/AudioPlayer';
-import { collection, getDocs, addDoc, serverTimestamp, query, orderBy } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
 import { Share2 } from 'lucide-react';
 
 export function GamePage() {
+    const location = useLocation();
+    const navigate = useNavigate();
     const [questions, setQuestions] = useState([]);
     const [currentIndex, setCurrentIndex] = useState(0);
     const [guess, setGuess] = useState('');
@@ -24,57 +27,47 @@ export function GamePage() {
     };
 
     useEffect(() => {
-        const fetchQuestions = async () => {
-            const CACHE_KEY = 'otoate_questions_cache';
-            const CACHE_EXPIRY = 60 * 60 * 1000; // 1時間
-
-            // キャッシュの確認
-            const cached = localStorage.getItem(CACHE_KEY);
+        const loadQuestions = () => {
             let qList = [];
 
-            if (cached) {
-                try {
-                    const parsed = JSON.parse(cached);
-                    const now = Date.now();
-                    if (now - parsed.timestamp < CACHE_EXPIRY) {
-                        console.log("Using cached questions");
+            // 1. Check passed state
+            if (location.state && location.state.questions) {
+                console.log("Using questions from navigation state");
+                qList = location.state.questions;
+            }
+            // 2. Check cache (fallback if page reloaded)
+            else {
+                const CACHE_KEY = 'otoate_questions_cache';
+                const cached = localStorage.getItem(CACHE_KEY);
+                if (cached) {
+                    try {
+                        const parsed = JSON.parse(cached);
+                        // We can ignore expiry here for redundancy/UX, or enforce it. 
+                        // Let's enforce expiry to be safe, but maybe laxer?
+                        // For now, simple check.
+                        console.log("Using cached questions (GamePage fallback)");
                         qList = parsed.data;
+                    } catch (e) {
+                        console.error("Cache parse error", e);
                     }
-                } catch (e) {
-                    console.error("Cache parse error", e);
                 }
             }
 
-            // キャッシュがない、または期限切れの場合は取得
             if (qList.length === 0) {
-                try {
-                    console.log("Fetching questions from Firestore");
-                    const querySnapshot = await getDocs(collection(db, "questions"));
-                    qList = querySnapshot.docs.map(doc => ({
-                        id: doc.id,
-                        ...doc.data()
-                    }));
-
-                    // キャッシュに保存
-                    localStorage.setItem(CACHE_KEY, JSON.stringify({
-                        data: qList,
-                        timestamp: Date.now()
-                    }));
-                } catch (error) {
-                    console.error("Error fetching questions:", error);
-                }
+                // No questions found, redirect to TitlePage
+                console.log("No questions found, redirecting to TitlePage");
+                navigate('/');
+                return;
             }
 
-            // シャッフルして10問選択
-            if (qList.length > 0) {
-                const shuffled = shuffleArray([...qList]); // コピーを作成してシャッフル
-                setQuestions(shuffled.slice(0, 10));
-            }
+            // Shuffle and pick 10
+            const shuffled = shuffleArray([...qList]);
+            setQuestions(shuffled.slice(0, 10));
             setLoading(false);
         };
 
-        fetchQuestions();
-    }, []);
+        loadQuestions();
+    }, [location.state, navigate]);
 
     const calculateRanking = async (finalScore) => {
         try {

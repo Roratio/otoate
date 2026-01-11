@@ -20,6 +20,7 @@ export async function onRequest(context) {
     <meta charset="UTF-8">
     <title>${title}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="keywords" content="エタリタ,エターナルリターン,スキル音,当て,スキル音当てゲーム,ゲーム,이터널리턴,이리">
 
     <!-- Twitter Card data -->
     <meta name="twitter:card" content="summary_large_image">
