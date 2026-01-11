@@ -10,19 +10,19 @@ export async function onRequest(context) {
     try {
         const results = {};
 
-        // 1. Test v1 runAggregationQuery
+        // 1. Test runAggregationQuery with structuredAggregationQuery wrapper
         const urlAgg = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents:runAggregationQuery?key=${apiKey}`;
         const bodyAgg = {
-            structuredQuery: {
-                from: [{ collectionId: "results" }],
+            structuredAggregationQuery: {
+                structuredQuery: {
+                    from: [{ collectionId: "results" }],
+                    limit: 1 // Just to be safe with costs in debug
+                },
                 aggregations: [{ alias: "count", count: {} }]
             }
         };
 
-        // 2. Test v1beta1 runAggregationQuery
-        const urlAggBeta = `https://firestore.googleapis.com/v1beta1/projects/${projectId}/databases/(default)/documents:runAggregationQuery?key=${apiKey}`;
-
-        // 3. Test v1 runQuery (Baseline)
+        // 2. Test v1 runQuery (Baseline)
         const urlQuery = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents:runQuery?key=${apiKey}`;
         const bodyQuery = {
             structuredQuery: {
@@ -31,26 +31,20 @@ export async function onRequest(context) {
             }
         };
 
-        // Execute 1 (v1)
+        // Execute 1 (v1 Agg)
         try {
             const res1 = await fetch(urlAgg, { method: 'POST', body: JSON.stringify(bodyAgg), headers: { 'Content-Type': 'application/json' } });
-            results.v1_agg_status = res1.status;
-            results.v1_agg_data = await res1.json();
-        } catch (e) { results.v1_agg_error = e.message; }
+            results.agg_status = res1.status;
+            results.agg_data = await res1.json();
+        } catch (e) { results.agg_error = e.message; }
 
-        // Execute 2 (v1beta1)
+        // Execute 2 (runQuery)
         try {
-            const res2 = await fetch(urlAggBeta, { method: 'POST', body: JSON.stringify(bodyAgg), headers: { 'Content-Type': 'application/json' } });
-            results.v1beta1_agg_status = res2.status;
-            results.v1beta1_agg_data = await res2.json();
-        } catch (e) { results.v1beta1_agg_error = e.message; }
-
-        // Execute 3 (runQuery)
-        try {
-            const res3 = await fetch(urlQuery, { method: 'POST', body: JSON.stringify(bodyQuery), headers: { 'Content-Type': 'application/json' } });
-            results.query_status = res3.status;
+            const res2 = await fetch(urlQuery, { method: 'POST', body: JSON.stringify(bodyQuery), headers: { 'Content-Type': 'application/json' } });
+            results.query_status = res2.status;
             // Limit output
-            results.query_sample = (await res3.json())[0];
+            const queryJson = await res2.json();
+            results.query_sample = queryJson[0];
         } catch (e) { results.query_error = e.message; }
 
 
